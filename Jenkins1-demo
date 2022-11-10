@@ -1,0 +1,30 @@
+pipeline{
+ agent any
+ environment{
+     path = "/opt/maven3/bin:$PATH"
+ }
+  stage{
+    stage("git checkout"){
+        step{
+          git credentialsId:'javahome' , url:
+         }
+     }
+     stage("maven build"){
+        steps{
+         sh "mvn clean package"
+         sh "mv target/*.war target/myweb.war"
+         }
+     }
+     stage("deploy-dev"){
+        steps{
+           sshagent(['tomcat-new']){
+           sh """
+              scp -o strictHostkeyChecking=no target/myweb.war ec2-user@ ip:/home/ec2-user/apache-tomcat-9.0.46/webapps/
+              ssh ec2-user@ip /home/ec2-user/apache-tomcat-9.0.46/bin/shutdown.sh
+              ssh ec2-user@ip /home/ec2-user/apache-tomcat-9.0.46/bin/startup.sh
+            """
+           }
+        }
+      }  
+     }
+   }  
